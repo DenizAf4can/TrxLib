@@ -34,7 +34,7 @@ TrxLib is a versatile UI library for Roblox, designed to create feature-rich and
 To use TrxLib, load it into your script environment like this:
 
 ```lua
-local TrxLib = loadstring(game:GetService("HttpService"):GetAsync("https://trxdent.com/dashboard/xLib.lua"))()
+local TrxLib = loadstring(game.HttpGet("https://trxdent.com/dashboard/xLib.lua"))()
 ```
 
 ## Initialization (`TrxLib.New`)
