@@ -488,99 +488,293 @@ Window:Notification({
 Here's a more complete example putting several pieces together:
 
 ```lua
-local HttpService = game:GetService("HttpService")
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
 
-local TrxLib = loadstring(HttpService:GetAsync("https://trxdent.com/dashboard/xLib.lua"))()
+local TrxLib = loadstring(game:HttpGet("https://trxdent.com/dashboard/xLib.lua"))()
 
-local Window = TrxLib.New({
+-- Wait for game to be fully loaded
+if not game:IsLoaded() then
+    game.Loaded:Wait()
+end
+task.wait(1) -- Extra delay for services
+
+-- Initialize TrxLib
+local Lib = TrxLib.New({
     HubName = "TrxLib Demo",
-    ScriptName = "Demo Script",
-    Version = "v0.1",
-    WindowSize = UDim2.new(0, 700, 0, 450),
-    InitialTheme = "amethystglow",
+    ScriptName = "Test Script",
+    Version = "v1.2.3",
+    WindowSize = UDim2.new(0, 850, 0, 600),
     UserInfo = {
-        Name = LocalPlayer.DisplayName,
-        Tag = "@" .. LocalPlayer.Name
-    }
+        Name = game:GetService("Players").LocalPlayer.DisplayName,
+        Tag = "@" .. game:GetService("Players").LocalPlayer.Name
+    },
+    InitialTheme = "default", -- Try "mintyfresh", "oceanbreeze", "sakuradream", "cyberpunknight", etc.
+    MiniLogoImage = "rbxassetid://1818497369", -- Default Roblox Studio icon, replace if you have a custom one
+    MiniLogoSize = UDim2.new(0, 50, 0, 50),
+    CloseAction = "destroy", -- "hide" or "destroy"
+    DisplayOrder = 1000,
+    HighestZIndex = 25000
 })
 
--- === General Category ===
-local generalCategory = Window:CreateCategory("General")
-local mainTab = generalCategory:CreateSubTab("Main")
+if not Lib then
+    warn("Failed to initialize TrxLib.")
+    return
+end
 
-mainTab:AddLabel("Welcome!", "This is a demonstration of TrxLib.", true)
-mainTab:AddSeparator()
+-- === CATEGORY 1: MAIN FEATURES ===
+local mainFeaturesCat = Lib:CreateCategory("Main Features")
 
-local nameInput = mainTab:AddTextInput("Your Name", "Enter your name here.", LocalPlayer.Name, LocalPlayer.Name, function(text)
-    Window:Notification({ Title = "Name Updated", Desc = "Your name is now: " .. text, Type = "info" })
+-- SUBTAB 1.1: Basic Controls
+local basicControlsTab = mainFeaturesCat:CreateSubTab("Basic Controls")
+
+basicControlsTab:AddLabel("Welcome to TrxLib!", "This tab demonstrates basic controls.", true)
+basicControlsTab:AddSeparator()
+
+local demoLabel = basicControlsTab:AddLabel("Dynamic Label:", "This label's text can be changed.")
+demoLabel:AddTooltip("This is a tooltip for the dynamic label!")
+
+local demoButton = basicControlsTab:AddButton("Click Me", "This button changes the label above.", function()
+    local R,G,B = math.random(0,255), math.random(0,255), math.random(0,255)
+    demoLabel:SetText("Button Clicked! Color: " .. R .. "," .. G .. "," .. B)
+    Lib:Notification({
+        Title = "Button Clicked!",
+        Desc = "The dynamic label was updated.",
+        Type = "info",
+        Duration = 2
+    })
 end)
-nameInput:AddTooltip("Type your name and press Enter.")
+demoButton:AddTooltip("Clicking this button will trigger an action and a notification.")
 
-local enableFeatureToggle = mainTab:AddToggle("Enable Feature X", "This toggle enables a hypothetical feature.", false, function(isEnabled)
-    Window:Notification({ Title = "Feature X", Desc = "Toggled to: " .. tostring(isEnabled), Type = isEnabled and "success" or "warning" })
+basicControlsTab:AddSeparator()
+
+local demoToggle = basicControlsTab:AddToggle("Enable Feature", "A simple toggle switch.", false, function(value)
+    print("Toggle changed to:", value)
+    demoLabel:SetDescription("Toggle is now: " .. (value and "ON" or "OFF"))
+    Lib:Notification({Title = "Toggle Update", Desc = "Feature is " .. (value and "Enabled" or "Disabled"), Type = value and "success" or "warning"})
 end)
-enableFeatureToggle:AddTooltip("Click to toggle Feature X on or off.")
+demoToggle:AddTooltip("This toggle controls a hypothetical feature.")
 
-local actionButton = mainTab:AddButton("Perform Action", "Click this to do something cool.", function()
-    Window:Notification({ Title = "Action Performed!", Type = "success", Duration = 2 })
+local demoTextInput = basicControlsTab:AddTextInput("User Name", "Enter your desired username.", "Type here...", "", function(text)
+    print("Text input changed to:", text)
+    if text == "" then
+        demoLabel:SetText("User Name cleared.")
+    else
+        demoLabel:SetText("User Name: " .. text)
+    end
 end)
-actionButton:AddTooltip("This button performs a generic action.")
+demoTextInput:AddTooltip("Enter text here. It updates the label on focus lost.")
 
--- === Settings Category ===
-local settingsCategory = Window:CreateCategory("Settings")
-local appearanceTab = settingsCategory:CreateSubTab("Appearance")
+basicControlsTab:AddSeparator()
 
-appearanceTab:AddLabel("Theme Selection", "Choose your preferred UI theme.", true)
+local demoSlider = basicControlsTab:AddSlider("Volume", "Adjust the volume level.", 0, 100, 50, function(value)
+    print("Slider value:", value)
+    demoLabel:SetText("Volume: " .. string.format("%.0f", value))
+end)
+demoSlider:AddTooltip("Drag or type to change the slider value.")
+
+-- SUBTAB 1.2: Advanced Controls
+local advancedControlsTab = mainFeaturesCat:CreateSubTab("Advanced Controls")
+
+advancedControlsTab:AddLabel("Advanced Controls", "Demonstrating dropdowns, range sliders, keybinds, and color pickers.", true)
+advancedControlsTab:AddSeparator()
+
+local singleDropdown = advancedControlsTab:AddDropdown(
+    "Select Fruit",
+    "Choose your favorite fruit.",
+    {"Apple", "Banana", "Cherry", "Date", "Elderberry", "Fig", "Grape"},
+    "Banana",
+    function(selectedItem)
+        print("Single Dropdown selected:", selectedItem)
+        Lib:Notification({Title = "Fruit Selected", Desc = "You chose: " .. tostring(selectedItem)})
+    end
+)
+singleDropdown:AddTooltip("A single-select dropdown menu.")
+
+local multiDropdown = advancedControlsTab:AddDropdown(
+    "Select Toppings (Multi)",
+    "Choose multiple toppings for your pizza.",
+    {"Pepperoni", "Mushrooms", "Onions", "Olives", "Peppers", "Sausage", "Bacon", "Pineapple"},
+    {"Mushrooms", "Peppers"},
+    function(selectedItems)
+        print("Multi Dropdown selected:", selectedItems)
+        local itemsStr = table.concat(selectedItems, ", ")
+        if #selectedItems == 0 then itemsStr = "None" end
+        Lib:Notification({Title = "Toppings Updated", Desc = "Selected: " .. itemsStr, Type = "info"})
+    end,
+    {MultiSelect = true, MaxItemsInButtonTextMulti = 2}
+)
+multiDropdown:AddTooltip("A multi-select dropdown. Try searching!")
+
+advancedControlsTab:AddButton("Update Single Dropdown Items", "Dynamically changes items in the fruit dropdown.", function()
+    local newItems = {"Orange", "Lemon", "Lime", "Grapefruit"}
+    local newInitial = "Lemon"
+    singleDropdown:SetItems(newItems, newInitial)
+    Lib:Notification({Title = "Dropdown Updated", Desc = "Fruit dropdown items changed.", Type = "info"})
+end)
+
+advancedControlsTab:AddSeparator()
+
+local demoRangeSlider = advancedControlsTab:AddRangeSlider(
+    "Price Range",
+    "Select a minimum and maximum price.",
+    0, 500, 50, 250,
+    function(minVal, maxVal)
+        print("Range Slider:", minVal, maxVal)
+        Lib:Notification({Title = "Price Range", Desc = string.format("Min: %.0f, Max: %.0f", minVal, maxVal)})
+    end
+)
+demoRangeSlider:AddTooltip("Adjust the minimum and maximum values of the range.")
+
+advancedControlsTab:AddSeparator()
+
+local demoKeybind = advancedControlsTab:AddKeybind("Action Keybind", "Set a key for this action.", Enum.KeyCode.E, function(key)
+    print("Keybind set to:", key.Name)
+    Lib:Notification({Title = "Keybind Set", Desc = "Action key is now: " .. key.Name})
+end)
+demoKeybind:AddTooltip("Click to set or change the keybind.")
+
+advancedControlsTab:AddSeparator()
+
+local demoColorPickerLabel = advancedControlsTab:AddLabel("Selected Color Preview", "")
+local demoColorPicker = advancedControlsTab:AddColorPicker("Choose Color", "Select a color using RGB or Hex.", Color3.fromRGB(255, 0, 127), function(color)
+    print("Color picked:", color)
+    demoColorPickerLabel:SetText(string.format("Color: R:%.2f, G:%.2f, B:%.2f", color.R, color.G, color.B))
+    -- Note: TextLabel does not have BackgroundColor3 directly, need to put it in a frame or use the color elsewhere.
+    -- For simplicity, just updating text.
+    Lib:Notification({Title = "Color Changed", Desc = "New color selected.", Type = "info"})
+end)
+demoColorPicker:AddTooltip("Pick a color. Supports RGB and Hex input, and mode switching.")
+
+
+-- SUBTAB 1.3: Sections & Tooltips
+local sectionsTab = mainFeaturesCat:CreateSubTab("Sections & Tooltips")
+sectionsTab:AddLabel("Sections and Tooltips", "Demonstrates collapsible sections and tooltips on various elements.", true)
+sectionsTab:AddSeparator()
+
+local section1 = sectionsTab:AddSection("Collapsible Section 1")
+section1:AddLabel("Inside Section 1", "This content is within the first section.")
+local section1Toggle = section1:AddToggle("Section Toggle", "A toggle inside the section.", true, function(val)
+    Lib:Notification({Title = "Section 1 Toggle", Desc = "Value: " .. tostring(val)})
+end)
+section1Toggle:AddTooltip("This toggle is nested inside Section 1.")
+section1:AddButton("Section Button", "A button within the section.", function()
+    Lib:Notification({Title = "Section 1 Button", Desc = "Clicked!"})
+end):AddTooltip("This button is also nested.")
+
+local section2 = sectionsTab:AddSection("Collapsible Section 2 (Initially Collapsed)")
+section2.IsExpanded = false -- Manually collapse it after creation if needed (or add option to AddSection)
+-- For demo, let's assume AddSection respects IsExpanded on creation (it does based on the code)
+-- To ensure it's collapsed, you might need to call its expand/collapse logic if it defaults to open
+-- However, the code `Rotation = sectionContentApi.IsExpanded and 0 or -90` suggests it should respect initial `IsExpanded`.
+
+section2:AddTextInput("Nested Input", "Text input within section 2.", "Enter data...")
+section2:AddSlider("Nested Slider", "", 0, 10, 5)
+
+sectionsTab:AddSeparator()
+sectionsTab:AddLabel("More Tooltips", "Hover over controls above and in other tabs to see tooltips."):AddTooltip("Even this label has a tooltip!")
+
+
+-- === CATEGORY 2: SETTINGS & SYSTEM ===
+local settingsCat = Lib:CreateCategory("Settings & System")
+
+-- SUBTAB 2.1: Themes
+local themesTab = settingsCat:CreateSubTab("Themes")
+themesTab:AddLabel("Theme Selector", "Change the UI theme dynamically.", true)
 
 local themeNames = {}
-for key, data in pairs(TrxLib.Themes) do
-    table.insert(themeNames, data.Name) -- Use pretty names for display
+for name, _ in pairs(TrxLib.Themes) do
+    table.insert(themeNames, TrxLib.Themes[name].Name or name) -- Use display name if available
 end
 table.sort(themeNames)
 
-local themeDropdown = appearanceTab:AddDropdown("UI Theme", "Select a visual theme.", themeNames, Window.Theme.Name, function(selectedThemeName)
-    for key, data in pairs(TrxLib.Themes) do
-        if data.Name == selectedThemeName then
-            Window:ApplyTheme(key)
-            Window:Notification({ Title = "Theme Changed", Desc = "Theme set to " .. selectedThemeName, Type = "info" })
+local currentThemeName = Lib.Theme.Name
+themesTab:AddDropdown("Select Theme", "Choose a theme for the UI.", themeNames, currentThemeName, function(selectedThemeDisplayName)
+    local themeKeyToApply
+    for key, themeData in pairs(TrxLib.Themes) do
+        if themeData.Name == selectedThemeDisplayName then
+            themeKeyToApply = key
             break
         end
     end
+    if themeKeyToApply then
+        print("Applying theme:", themeKeyToApply)
+        Lib:ApplyTheme(themeKeyToApply)
+        Lib:Notification({Title = "Theme Changed", Desc = "Applied: " .. selectedThemeDisplayName, Type = "success"})
+    else
+        warn("Could not find theme key for display name:", selectedThemeDisplayName)
+    end
+end):AddTooltip("Select a theme from this dropdown to change the UI's appearance.")
+
+themesTab:AddSeparator()
+themesTab:AddLabel("Custom Theme Example", "The themes are tables that can be merged and extended.")
+
+-- SUBTAB 2.2: Notifications
+local notificationsTab = settingsCat:CreateSubTab("Notifications")
+notificationsTab:AddLabel("Notification Tester", "Trigger different types of notifications.", true)
+
+notificationsTab:AddButton("Success Notification", "Shows a success message.", function()
+    Lib:Notification({
+        Title = "Success!",
+        Desc = "Your operation was completed successfully.",
+        Type = "success",
+        Duration = 3
+    })
 end)
-themeDropdown:AddTooltip("Change the look and feel of the UI.")
 
-local colorPicker = appearanceTab:AddColorPicker("Accent Color", "Choose an accent color.", Window.Theme.SubTabActiveBackground, function(newColor)
-    Window:Notification({ Title = "Color Picked", Desc = "Picked: " .. newColor:ToHex(), Type = "info"})
-    -- In a real scenario, you might apply this color to certain elements
-end)
-colorPicker:AddTooltip("Select a custom accent color (cosmetic in this demo).")
-
-
-local keybindTab = settingsCategory:CreateSubTab("Keybinds")
-keybindTab:AddKeybind("Primary Action", "Key for primary action.", Enum.KeyCode.E, function(keyCode)
-    Window:Notification({ Title = "Keybind Set", Desc = "Primary action key: " ..keyCode.Name, Type = "info"})
+notificationsTab:AddButton("Error Notification", "Shows an error message.", function()
+    Lib:Notification({
+        Title = "Error Occurred",
+        Desc = "Something went wrong. Please try again.",
+        Type = "error",
+        Duration = 4
+    })
 end)
 
--- === Advanced Section in Main Tab ===
-mainTab:AddSeparator()
-local advancedSection = mainTab:AddSection("Advanced Options")
+notificationsTab:AddButton("Warning Notification", "Shows a warning message.", function()
+    Lib:Notification({
+        Title = "Warning",
+        Desc = "Please be cautious with this setting.",
+        Type = "warning",
+        Duration = 3
+    })
+end)
 
-advancedSection:AddSlider("Power Level", "Adjust the power level.", 1, 10, 5, function(value)
-    Window:Notification({ Title = "Power Level", Desc = "Set to: " .. value, Type = "info"})
-end):AddTooltip("Slide to change the power.")
+notificationsTab:AddButton("Info Notification", "Shows an informational message.", function()
+    Lib:Notification({
+        Title = "Information",
+        Desc = "This is some useful information for you.",
+        Type = "info",
+        Duration = 3
+    })
+end)
 
-advancedSection:AddRangeSlider("Value Range", "Define a min/max range.", 0, 100, 20, 80, function(minVal, maxVal)
-     Window:Notification({ Title = "Range Set", Desc = "Min: "..minVal..", Max: "..maxVal, Type = "info"})
-end):AddTooltip("Define a custom numerical range.")
+notificationsTab:AddButton("Default Notification", "Shows a default style message.", function()
+    Lib:Notification({
+        Title = "Default Message",
+        Desc = "This is a standard notification without a specific type.",
+        Duration = 2
+    })
+end)
 
--- Initial Notification
-task.wait(1) -- Wait for UI to fully load
-Window:Notification({
-    Title = "Welcome to TrxLib Demo!",
-    Desc = "Explore the features and controls.",
-    Duration = 5,
-    Type = "info"
-})
+notificationsTab:AddButton("Long Notification (No Desc)", "A notification with a longer duration and no description.", function()
+    Lib:Notification({
+        Title = "This will stay for 7 seconds",
+        Type = "default",
+        Duration = 7
+    })
+end)
+
+local valueDisplayLabel = basicControlsTab:AddLabel("Toggle Value Display:", "Will show the toggle's current value.")
+basicControlsTab:AddButton("Show Toggle Value", "Updates the label above with the toggle's state.", function()
+    local toggleState = demoToggle:GetValue()
+    valueDisplayLabel:SetText("Toggle is currently: " .. (toggleState and "ON" or "OFF"))
+end)
+
+basicControlsTab:AddButton("Set Slider to 25", "Programmatically sets the slider value.", function()
+    demoSlider:SetValue(25)
+    Lib:Notification({Title = "Slider Set", Desc = "Volume slider set to 25 programmatically."})
+end)
+
+if Lib.ActiveSubTab == nil and #Lib.Categories > 0 and #Lib.Categories[1].SubTabs > 0 then
+    Lib:SelectSubTab(Lib.Categories[1].SubTabs[1])
+end
 ```
